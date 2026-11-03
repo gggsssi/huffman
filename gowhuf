@@ -1,0 +1,195 @@
+#include<stdio.h>
+#include<stdlib.h>
+struct tnode
+{
+    char alpha;
+    int freq;
+    struct tnode *l;
+    struct tnode *r;
+    struct tnode *nxt;
+    };
+
+struct tnode *createtnode(int freq, char cont)
+ { 
+    struct tnode *c=NULL;
+    c=(struct tnode *)malloc(sizeof(struct tnode));
+    c->freq=freq;
+    c->alpha=cont;
+    c->l=NULL;
+    c->r=NULL;
+    c->nxt=NULL;
+    return(c);
+  }  
+
+void inorder(struct tnode *root) ;
+void Decode(struct tnode*root,char *arr);
+void  makelist(struct tnode*c,struct tnode **list)
+{
+     if(c==NULL)//if the user gave no input
+     {
+            printf("error\n");
+               return;
+        }
+        
+    if(*list == NULL)//if there is no node in the linked list.
+    {
+        *list=c;
+        return;
+      }
+  
+  int ex;
+  struct tnode *e=*list;//storing head in a temp var
+   ex=c->freq;//storing freq of the input node.
+  if(ex<= e->freq)//if input node's freq is the least then make it the head.
+  {
+       c->nxt=*list;
+       *list=c;
+       return;
+     }
+     while(e->nxt!=NULL && e->nxt->freq<= ex)//else iterate and place it in its pos.(places after the node with similar val)
+   {
+          e=e->nxt;
+        }
+        c->nxt=e->nxt;
+        e->nxt=c;
+        
+    return;//not required 
+    }
+    
+struct tnode*maketree(struct tnode**list)
+{
+  struct tnode*t,*c,*d,*e;
+         if((*list) ==NULL)//if there is no user input
+          {
+                return(NULL);
+            }
+         if((*list)->nxt==NULL)//if there is only one element then place it in the left and return.
+            {
+             t=createtnode((*list)->freq,0);
+             t->l=(*list);
+             return(t);}
+         
+         int sum=0;
+         sum = sum + ((*list)->freq) + ((*list)->nxt->freq);
+         t=createtnode(sum,0);//create dummynode with freq of the 1st 2 nodes and char 0
+         t->r=*list;//its right is the first element
+         t->l=(*list)->nxt;//its left is the second element
+         if((*list)->nxt->nxt == NULL)//if there were only two elements
+          {
+                return(t);
+          }
+          e=(*list)->nxt->nxt;//storing the potential new head
+          if ((*list)->alpha!=0)//removing the next link between the two nodes in the dummy.
+          {
+                   (*list)->nxt->nxt=NULL;
+                  (*list)->nxt=NULL;
+           }
+          *list=e;//making the potential new head as the head.
+        makelist(t,list);//placing t in the list.
+        return maketree(list);//doing this till there is one node or even two (actually one wont work because two case will come first.)
+        }
+        int Code(char x, struct tnode *root, int i[], int * d) //using the property that an array changes in place.
+        {
+            if (root == NULL)//if there is no root
+                return 0;
+            if (root->alpha == x)//if that alphabet is found
+                return 1;
+            i[*d] = 0;//put zero in the array before going to the left bcz we wont know if we came left or right if we put it after the call.
+            (*d)++;//go to the next free index
+            if (Code(x, root->l, i,d))//call left and check if the letter is there in the left SUBTREE.
+                return 1;
+            (*d)--;//if not in left SUBTREE change the previous index's val to 1 (you are assuming that it is there in the right subtree)
+            i[*d] = 1;
+            (*d)++;//go to the next free index
+            if (Code(x, root->r, i,d))//check right SUBTREE.
+                return 1;
+            (*d)--;
+            return 0;//it will come here only if the letter is not found at all.   
+        }
+        
+void Encode(char txt[], struct tnode *root)//helper function
+  {
+    int arr[400];//array that will store the binary numbers
+    printf("Encoded Output: ");
+    for (int i = 0; txt[i]; i++)//runs until it hits the '/0' char
+      {
+        int depth = 0;//reseting depth/index to zero before getting the next char encoded
+        if (Code(txt[i], root, arr, &depth)) //if the letter is found
+          {
+            for (int j = 0; j < depth; j++)//print till the index - 1. Fun fact: Index gets updated without even returning bcs it is an integer pointer and is in place.
+                  printf("%d", arr[j]);
+                printf(" ");
+          }
+      }
+    printf("\n");
+  }         
+int main()
+{
+     
+    struct tnode **list=(struct tnode **)malloc(sizeof(struct tnode*));
+    *list=NULL;
+    struct tnode *c,*d,*e;
+    int freq=0;
+    char alpha=0;
+    printf("!!!!enter -1 as freq to stop!!!\n");
+    while(freq!= -1)
+    {
+        printf("enter the alpha and frequency:");
+        scanf(" %c %d",&alpha,&freq);
+        if(freq==-1)
+            break;
+       c=createtnode(freq,alpha);
+       makelist(c,list);
+    }
+     e=maketree(list);
+    if (e == NULL) {
+    printf("Tree is empty.\n");
+    return 0;
+    }
+    inorder(e);
+    printf("Enter the phrase to encode:");
+    char arr[100]={};
+    scanf("%s",arr);
+    Encode(arr,e);
+    printf("Enter string to decode: ");
+    scanf("%c");//this is to remove the whitespace character that is in the buffer.
+    scanf("%[^\n]",arr);
+    Decode(e,arr);
+  }
+
+void inorder(struct tnode *root) 
+{
+    if (root == NULL)
+        return;
+    inorder(root->l);  
+    printf("(%c, %d)\n", root->alpha, root->freq);
+    inorder(root->r);
+}
+
+void Decode(struct tnode*root,char *arr)// works only if the user gives spaces for encoded binary for every letter.
+{
+     struct tnode *ex,*s=NULL;
+     s=root;
+     ex=root;
+     if (root==NULL)// if no root
+      {
+         printf("error!!!\n");
+         return;
+        }
+     int i=0,j=0;
+     while(arr[j])
+     {
+            while(arr[i]!=' '&& arr[i]!='\0')//if its space or NULL char then it means one letter can be decoded.
+            {
+                if(arr[i]=='1')//if its 1 then go right.
+                     ex=(ex)->r;
+                else if(arr[i]=='0')//if its 0 then go left
+                    ex=(ex)->l;
+                i=i+1;
+              }
+      printf("%c",ex->alpha);//print the current nodes alpha (happens whenever you hit space or NULL)
+      ex=s;//reset the current to root after printing.
+      j=i+1;
+      i=i+1;
+    }
+  }
